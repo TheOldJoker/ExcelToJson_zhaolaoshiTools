@@ -301,7 +301,40 @@
                 defval: '', // 默认空单元格值
                 raw: false  // 以字符串格式返回
               });
-              result[sheetName] = json;
+              
+              // 处理可能的数组格式
+              const processedJson = json.map(row => {
+                const processedRow = {};
+                
+                Object.keys(row).forEach(key => {
+                  let value = row[key];
+                  
+                  // 尝试检测并解析数组格式
+                  if (typeof value === 'string') {
+                    // 检查是否是数组格式，如 [1,2,3] 或 ["a","b","c"]
+                    if ((value.startsWith('[') && value.endsWith(']')) || 
+                        (value.startsWith('{') && value.endsWith('}'))) {
+                      try {
+                        // 尝试解析JSON
+                        processedRow[key] = JSON.parse(value);
+                      } catch (e) {
+                        // 如果解析失败，保留原始值
+                        processedRow[key] = value;
+                      }
+                    } else {
+                      // 其他情况保留原始值
+                      processedRow[key] = value;
+                    }
+                  } else {
+                    // 非字符串类型直接保留
+                    processedRow[key] = value;
+                  }
+                });
+                
+                return processedRow;
+              });
+              
+              result[sheetName] = processedJson;
             });
             
             resolve({
